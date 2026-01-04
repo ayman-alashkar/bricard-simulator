@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bricard 6R Linkage — Tensor Method</title>
+    <meta name="description" content="Interactive visualization of the line-symmetric Bricard 6R linkage using tensor-based closure equations">
+    <meta name="author" content="Ayman Alashkar">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #0d1b2a 100%);
+            color: #e0e1dd;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 240px 1fr 300px;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+        
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            padding: 14px 24px;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header h1 .icon { opacity: 0.7; }
+        .header .sub {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.4);
+            margin-top: 2px;
+        }
+        .header-buttons { display: flex; gap: 10px; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-params {
+            background: rgba(255,255,255,0.1);
+            color: #e0e1dd;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-params:hover { background: rgba(255,255,255,0.15); }
+        .btn-form {
+            background: linear-gradient(135deg, #e63946 0%, #d62839 100%);
+            color: #fff;
+        }
+        .btn-form.form-i {
+            background: linear-gradient(135deg, #00b4d8 0%, #0096c7 100%);
+        }
+        
+        /* Left Panel */
+        .left {
+            padding: 16px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .play-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #00b4d8 0%, #0096c7 100%);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .play-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,180,216,0.3); }
+        .play-btn.playing {
+            background: linear-gradient(135deg, #e63946 0%, #d62839 100%);
+        }
+        
+        .section {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .section h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 10px;
+        }
+        .big-val {
+            font-size: 2.2rem;
+            font-weight: 300;
+            color: #00b4d8;
+            text-align: center;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .range-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.3);
+            margin-top: 4px;
+        }
+        .limit-indicator {
+            text-align: center;
+            font-size: 0.75rem;
+            padding: 6px;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+        .limit-indicator.ok {
+            background: rgba(0,180,216,0.15);
+            color: #00b4d8;
+        }
+        .limit-indicator.at-limit {
+            background: rgba(230,57,70,0.2);
+            color: #e63946;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #00b4d8;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,180,216,0.4);
+        }
+        
+        .out-vals { display: flex; gap: 12px; }
+        .out-val { flex: 1; text-align: center; }
+        .out-val .lbl {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 4px;
+        }
+        .out-val .val {
+            font-size: 1.3rem;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        
+        /* Color theme selector */
+        .color-section h3 { margin-bottom: 8px; }
+        .color-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+        .color-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #e0e1dd;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .color-btn:hover { background: rgba(255,255,255,0.1); }
+        .color-btn.active {
+            background: rgba(0,180,216,0.2);
+            border-color: #00b4d8;
+        }
+        
+        /* Center */
+        .center {
+            position: relative;
+            background: radial-gradient(ellipse at center, #1b263b 0%, #0d1b2a 100%);
+        }
+        #cv { width: 100%; height: 100%; display: block; }
+        .center-info {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.3);
+        }
+        .view-info {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.25);
+            background: rgba(0,0,0,0.3);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .reset-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e1dd;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .reset-btn:hover { background: rgba(255,255,255,0.15); }
+        
+        /* Right Panel */
+        .right {
+            padding: 16px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-left: 1px solid rgba(255,255,255,0.05);
+            overflow-y: auto;
+        }
+        .curve-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .curve-box.active {
+            border-color: rgba(0,180,216,0.5);
+            box-shadow: 0 0 20px rgba(0,180,216,0.1);
+        }
+        .curve-box h4 {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .curve-box canvas { 
+            width: 100%; 
+            height: 110px; 
+            display: block; 
+            border-radius: 6px; 
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .curve-box canvas:hover {
+            opacity: 0.9;
+        }
+        .legend {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+            flex-wrap: wrap;
+        }
+        .legend span { display: flex; align-items: center; gap: 4px; }
+        .legend .collision { color: rgba(230,57,70,0.7); }
+        
+        .sym-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .sym-box h4 {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .sym-row {
+            display: flex;
+            font-size: 0.9rem;
+            padding: 4px 0;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .sym-row .lbl { color: rgba(255,255,255,0.4); width: 90px; }
+        .sym-row .val { color: #00b4d8; }
+        
+        /* Link Info Box */
+        .info-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-top: 10px;
+        }
+        .info-box h4 {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .link-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .link-table th {
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+            text-align: center;
+            padding: 4px 2px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .link-table td {
+            padding: 5px 2px;
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+        }
+        .link-table .link-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        .link-table .link-name {
+            text-align: left;
+            white-space: nowrap;
+        }
+        .link-table .joint-angle {
+            color: #00b4d8;
+            font-weight: 500;
+        }
+        
+        /* Vector legend */
+        .vector-legend {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.6);
+            padding: 3px 0;
+        }
+        .legend-arrow {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        
+        /* Toggle rows */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            padding: 6px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            accent-color: #00b4d8;
+            cursor: pointer;
+        }
+        .toggle-label {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+        }
+        .toggle-row:hover .toggle-label {
+            color: rgba(255,255,255,0.9);
+        }
+        
+        /* Footer */
+        .footer {
+            grid-column: 1 / -1;
+            padding: 10px 24px;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.4);
+        }
+        .footer-left { font-weight: 500; text-align: left; }
+        .footer-right { color: rgba(255,255,255,0.3); text-align: right; }
+        
+        /* Parameter Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: all; }
+        .modal {
+            background: linear-gradient(135deg, #1b263b 0%, #0d1b2a 100%);
+            border-radius: 16px;
+            padding: 24px;
+            width: 720px;
+            max-width: 95%;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .modal h2 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .param-group {
+            margin-bottom: 16px;
+        }
+        .param-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 6px;
+        }
+        .param-inputs {
+            display: flex;
+            gap: 8px;
+        }
+        .param-inputs input {
+            flex: 1;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #e0e1dd;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .param-inputs input:focus {
+            outline: none;
+            border-color: #00b4d8;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-buttons .btn { flex: 1; }
+        .btn-apply {
+            background: linear-gradient(135deg, #00b4d8 0%, #0096c7 100%);
+            color: #fff;
+        }
+        .btn-cancel {
+            background: rgba(255,255,255,0.1);
+            color: #e0e1dd;
+        }
+        
+        /* Loading */
+        .loading {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #0d1b2a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .loading.hidden { display: none; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #00b4d8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { margin-top: 16px; color: rgba(255,255,255,0.5); }
+        
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .container {
+                grid-template-columns: 220px 1fr 280px;
+            }
+        }
+        
+        @media (max-width: 1100px) {
+            .container {
+                grid-template-columns: 200px 1fr 250px;
+            }
+            .header h1 { font-size: 1.1rem; }
+            .modal { width: 90%; max-width: 600px; }
+            .param-grid { grid-template-columns: 1fr 1fr; }
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr auto auto;
+            }
+            .header { flex-wrap: wrap; gap: 10px; }
+            .left { 
+                order: 2;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 16px;
+                padding: 12px 16px;
+            }
+            .left .section { flex: 1; min-width: 150px; }
+            .play-btn { flex: 0 0 auto; width: auto; padding: 12px 24px; }
+            .main { order: 3; min-height: 50vh; }
+            .right { 
+                order: 4;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            .footer { order: 5; }
+            .param-grid { grid-template-columns: 1fr; }
+        }
+        
+        @media (max-width: 600px) {
+            .header { padding: 10px 16px; }
+            .header h1 { font-size: 1rem; }
+            .header .sub { font-size: 0.65rem; }
+            .btn { padding: 8px 12px; font-size: 0.75rem; }
+            .left { padding: 10px 12px; }
+            .right { padding: 10px 12px; }
+            .footer { 
+                flex-direction: column; 
+                gap: 4px; 
+                padding: 8px 16px;
+                align-items: stretch;
+            }
+            .footer-left { align-self: flex-start; }
+            .footer-right { align-self: flex-end; }
+            .angle-grid { grid-template-columns: repeat(3, 1fr); }
+            .curve-box { min-height: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Computing kinematic curves...</p>
+    </div>
+
+    <!-- Parameter Modal -->
+    <div class="modal-overlay" id="paramModal">
+        <div class="modal">
+            <h2>⚙ Parameters</h2>
+            <div class="param-group">
+                <label>Link lengths a (a₁, a₂, a₃)</label>
+                <div class="param-inputs">
+                    <input type="number" id="a1" step="0.1" value="2.4">
+                    <input type="number" id="a2" step="0.1" value="2.9">
+                    <input type="number" id="a3" step="0.1" value="1.5">
+                </div>
+            </div>
+            <div class="param-group">
+                <label>Twist angles α in degrees (α₁, α₂, α₃)</label>
+                <div class="param-inputs">
+                    <input type="number" id="al1" step="1" value="40">
+                    <input type="number" id="al2" step="1" value="80">
+                    <input type="number" id="al3" step="1" value="130">
+                </div>
+            </div>
+            <div class="param-group">
+                <label>Joint offsets R (R₁, R₂, R₃)</label>
+                <div class="param-inputs">
+                    <input type="number" id="R1" step="0.05" value="0.5">
+                    <input type="number" id="R2" step="0.05" value="0.55">
+                    <input type="number" id="R3" step="0.05" value="0.42">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-cancel" onclick="resetParams()">Reset to Default</button>
+                <button class="btn btn-cancel" onclick="closeParams()">Cancel</button>
+                <button class="btn btn-apply" onclick="applyParams()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1><span class="icon">⚙</span> Bricard 6R Linkage</h1>
+                <div class="sub">Line-Symmetric Bricard 6R • Tensor-Based Closure Equations</div>
+            </div>
+            <div class="header-buttons">
+                <button class="btn btn-params" onclick="openParams()">⚙ Parameters</button>
+                <button class="btn btn-form" id="formBtn" onclick="toggleForm()">Form II</button>
+            </div>
+        </header>
+
+        <div class="left">
+            <button class="play-btn" id="playBtn" onclick="togglePlay()">▶ Play (Oscillate)</button>
+            
+            <div class="section">
+                <h3>Input Angle θ₁</h3>
+                <div class="big-val" id="t1disp">0.0°</div>
+                <input type="range" id="t1slider" min="-180" max="180" value="0" step="0.5">
+                <div class="range-info">
+                    <span id="minLabel">-180°</span>
+                    <span id="maxLabel">180°</span>
+                </div>
+                <div class="limit-indicator ok" id="limitInd">✓ Within valid range</div>
+            </div>
+            
+            <div class="section">
+                <h3>Speed</h3>
+                <input type="range" id="speedSlider" min="0.2" max="3" value="1" step="0.1">
+                <div style="text-align:center;font-size:0.85rem;color:rgba(255,255,255,0.5)" id="speedDisp">1.0x</div>
+            </div>
+            
+            <div class="section color-section">
+                <h3>Colors</h3>
+                <div class="color-btns">
+                    <button class="color-btn active" onclick="setColorScheme('rainbow')">Rainbow</button>
+                    <button class="color-btn" onclick="setColorScheme('ocean')">Ocean</button>
+                    <button class="color-btn" onclick="setColorScheme('sunset')">Sunset</button>
+                    <button class="color-btn" onclick="setColorScheme('neon')">Neon</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Display Options</h3>
+                <label class="toggle-row">
+                    <input type="checkbox" id="showJointAxes" onchange="toggleJointAxes()">
+                    <span class="toggle-label">Show joint axes (e³)</span>
+                </label>
+            </div>
+            
+            <div class="section">
+                <h3>Output Angles</h3>
+                <div class="out-vals">
+                    <div class="out-val">
+                        <div class="lbl">θ₂ = θ₅</div>
+                        <div class="val" id="t2disp" style="color:#fca311">0.0°</div>
+                    </div>
+                    <div class="out-val">
+                        <div class="lbl">θ₃ = θ₆</div>
+                        <div class="val" id="t3disp" style="color:#e63946">0.0°</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="center">
+            <canvas id="cv"></canvas>
+            <button class="reset-btn" onclick="resetView()">Reset View</button>
+            <div class="center-info">Drag to rotate view</div>
+            <div class="view-info" id="viewInfo">0° × 0°</div>
+        </div>
+
+        <div class="right">
+            <div class="curve-box" id="c1box">
+                <h4>Form I Kinematic Curve</h4>
+                <canvas id="c1"></canvas>
+                <div class="legend">
+                    <span id="leg1t2">— θ₂</span>
+                    <span id="leg1t3">-- θ₃</span>
+                    <span class="collision">■ collision</span>
+                    <span style="color:rgba(0,180,216,0.6)">■ valid (click)</span>
+                </div>
+            </div>
+            
+            <div class="curve-box active" id="c2box">
+                <h4>Form II Kinematic Curve</h4>
+                <canvas id="c2"></canvas>
+                <div class="legend">
+                    <span id="leg2t2">— θ₂</span>
+                    <span id="leg2t3">-- θ₃</span>
+                    <span class="collision">■ collision</span>
+                    <span style="color:rgba(0,180,216,0.6)">■ valid (click)</span>
+                </div>
+            </div>
+            
+            <div class="sym-box">
+                <h4>Symmetry Relations</h4>
+                <div class="sym-row"><span class="lbl">θ₄ = θ₁ =</span><span class="val" id="s1">0.0°</span></div>
+                <div class="sym-row"><span class="lbl">θ₅ = θ₂ =</span><span class="val" id="s2">0.0°</span></div>
+                <div class="sym-row"><span class="lbl">θ₆ = θ₃ =</span><span class="val" id="s3">0.0°</span></div>
+            </div>
+            
+            <div class="info-box" id="linkInfoBox">
+                <h4>Link Information</h4>
+                <table class="link-table">
+                    <thead>
+                        <tr>
+                            <th>Link</th>
+                            <th>Joint</th>
+                            <th>a</th>
+                            <th>α</th>
+                            <th>R</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linkTableBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                <div class="vector-legend" id="vectorLegend">
+                    <div class="legend-item" id="legendAxis" style="display:none;">
+                        <span class="legend-arrow" style="color:#00ff00;">→</span>
+                        <span>e³: Joint axis (rotation axis)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="footer">
+            <span class="footer-left">Ayman Alashkar</span>
+            <span class="footer-right">Mechanics and Materials Unit • OIST • 2025</span>
+        </footer>
+    </div>
+
+<script>
+// ============================================================
+// COLOR SCHEMES (matching screenshot style)
+// ============================================================
+const COLOR_SCHEMES = {
+    rainbow: [0x00b4d8, 0xfca311, 0xe63946, 0x9d4edd, 0x06d6a0, 0xf72585],
+    ocean:   [0x023e8a, 0x0077b6, 0x00b4d8, 0x48cae4, 0x90e0ef, 0xade8f4],
+    sunset:  [0xff6b6b, 0xfca311, 0xffd93d, 0xff9f1c, 0xe85d04, 0xd00000],
+    neon:    [0x00ff87, 0x60efff, 0xff00ff, 0xffff00, 0xff6b6b, 0x00ffff]
+};
+let currentScheme = 'rainbow';
+
+// ============================================================
+// PARAMETERS (editable)
+// ============================================================
+let P = {
+    a: [2.4, 2.9, 1.5],
+    al: [40, 80, 130].map(d => d * Math.PI / 180),
+    R: [0.5, 0.55, 0.42]
+};
+
+// ============================================================
+// GEOMETRY (used for rendering AND collision thresholds)
+// Change these once, and both visualization + collision update automatically.
+// ============================================================
+const GEOM = {
+    jointRadius: 0.1,
+    offsetRadius: 0.06,
+    linkBox: { width: 0.08, depth: 0.04 }
+};
+
+// ============================================================
+// TENSOR-BASED KINEMATICS
+// ============================================================
+//
+// Inter-link rotation tensor Q^{(n+1),n} [Equation (3)]:
+//   Q^{(n+1),n} = cos(θ)(I - e3⊗e3) + sin(θ)(e3×) + e3⊗e3
+//   followed by twist α about e^{n+1}_1
+//
+// In matrix form:
+//   [Q] = | cos(θ)   -cos(α)sin(θ)    sin(α)sin(θ)  |
+//         | sin(θ)    cos(α)cos(θ)   -sin(α)cos(θ)  |
+//         |   0         sin(α)           cos(α)      |
+//
+// Closure equations:
+//   Rotational [Eq. 4]:    Q^{2,1}Q^{3,2}Q^{4,3}Q^{5,4}Q^{6,5}Q^{1,6} = I
+//   Translational [Eq. 5]: Σ(R_n·e^n_3 + a_n·e^{n+1}_1) = 0
+//
+// Line-symmetric constraint [Eq. 8]: θ₁=θ₄, θ₂=θ₅, θ₃=θ₆
+// ============================================================
+
+const mm = (A,B) => {
+    const R=[[0,0,0],[0,0,0],[0,0,0]];
+    for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)R[i][j]+=A[i][k]*B[k][j];
+    return R;
+};
+
+const mv = (A,v) => [
+    A[0][0]*v[0] + A[0][1]*v[1] + A[0][2]*v[2],
+    A[1][0]*v[0] + A[1][1]*v[1] + A[1][2]*v[2],
+    A[2][0]*v[0] + A[2][1]*v[1] + A[2][2]*v[2]
+];
+
+// Inter-link rotation tensor Q^{n+1,n}
+const tensorQ = (theta, alpha) => {
+    const ct = Math.cos(theta), st = Math.sin(theta);
+    const ca = Math.cos(alpha), sa = Math.sin(alpha);
+    return [
+        [ ct, -ca*st,  sa*st],
+        [ st,  ca*ct, -sa*ct],
+        [  0,     sa,     ca]
+    ];
+};
+
+// Build cumulative rotation tensors Q^{n,0}
+const buildTensorBases = (t6, a6) => {
+    const Q_list = [];
+    for (let n = 0; n < 6; n++) {
+        Q_list.push(tensorQ(t6[n], a6[n]));
+    }
+    
+    const Q_cum = [[[1,0,0],[0,1,0],[0,0,1]]];
+    let Qc = [[1,0,0],[0,1,0],[0,0,1]];
+    for (let n = 0; n < 6; n++) {
+        Qc = mm(Qc, Q_list[n]);
+        Q_cum.push(JSON.parse(JSON.stringify(Qc)));
+    }
+    
+    return { Q_list, Q_cum };
+};
+
+// Closure residual (rotational + translational)
+const tensorResid = t6 => {
+    const a6 = [...P.al, ...P.al];
+    const aa = [...P.a, ...P.a];
+    const RR = [...P.R, ...P.R];
+    
+    const { Q_list, Q_cum } = buildTensorBases(t6, a6);
+    
+    // Rotational closure: Q^{2,1}Q^{3,2}Q^{4,3}Q^{5,4}Q^{6,5}Q^{1,6} = I  [Equation (4)]
+    // Equivalent to: Q^{6,0} = I (cumulative rotation returns to identity)
+    const Q6 = Q_cum[6];
+    const rot = [
+        0.5*(Q6[2][1] - Q6[1][2]),
+        0.5*(Q6[0][2] - Q6[2][0]),
+        0.5*(Q6[1][0] - Q6[0][1])
+    ];
+    
+    // Translational closure: Σ(R_n * e^n_3 + a_n * e^{n+1}_1) = 0  [Equation (5)]
+    const tr = [0, 0, 0];
+    for (let n = 0; n < 6; n++) {
+        // e^n_3 = 3rd column of Q^{n,0} (joint axis direction)
+        const e3_n = [Q_cum[n][0][2], Q_cum[n][1][2], Q_cum[n][2][2]];
+        // e^{n+1}_1 = 1st column of Q^{n+1,0} (common normal direction)
+        const e1_np1 = [Q_cum[n+1][0][0], Q_cum[n+1][1][0], Q_cum[n+1][2][0]];
+        // Equation (5): R_n * e^n_3 + a_n * e^{n+1}_1
+        tr[0] += RR[n] * e3_n[0] + aa[n] * e1_np1[0];
+        tr[1] += RR[n] * e3_n[1] + aa[n] * e1_np1[1];
+        tr[2] += RR[n] * e3_n[2] + aa[n] * e1_np1[2];
+    }
+    
+    return [...rot, ...tr];
+};
+
+// Corotational bases for visualization
+const skew = u => [[0,-u[2],u[1]], [u[2],0,-u[0]], [-u[1],u[0],0]];
+const rod = (ax,an) => {
+    const n=Math.sqrt(ax[0]**2+ax[1]**2+ax[2]**2);
+    if(n<1e-14)return[[1,0,0],[0,1,0],[0,0,1]];
+    const u=[ax[0]/n,ax[1]/n,ax[2]/n],c=Math.cos(an),s=Math.sin(an),K=skew(u);
+    const R=[[0,0,0],[0,0,0],[0,0,0]];
+    for(let i=0;i<3;i++)for(let j=0;j<3;j++)R[i][j]=(i===j?c:0)+(1-c)*u[i]*u[j]+s*K[i][j];
+    return R;
+};
+const bases = (t6, a6) => {
+    let Q = [[1,0,0],[0,1,0],[0,0,1]];
+    const B = [JSON.parse(JSON.stringify(Q))];
+    for (let n = 0; n < 6; n++) {
+        const Qn = tensorQ(t6[n], a6[n]);
+        Q = mm(Q, Qn);
+        B.push(JSON.parse(JSON.stringify(Q)));
+    }
+    return B;
+};
+
+const resid = tensorResid;
+const norm = v => Math.sqrt(v.reduce((s,x)=>s+x*x,0));
+const wrap = a => { while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
+
+function solve(t1, g) {
+    let t2=g[0], t3=g[1], lam=1e-4;
+    const F=(a,b)=>resid([t1,a,b,t1,a,b]);
+    let Fx=F(t2,t3), err=norm(Fx);
+    const h=2e-6;
+    for(let it=0;it<80&&err>1e-10;it++){
+        const Fp2=F(t2+h,t3),Fm2=F(t2-h,t3),Fp3=F(t2,t3+h),Fm3=F(t2,t3-h);
+        const J=[];for(let i=0;i<6;i++)J.push([(Fp2[i]-Fm2[i])/(2*h),(Fp3[i]-Fm3[i])/(2*h)]);
+        const JTJ=[[0,0],[0,0]],JTF=[0,0];
+        for(let i=0;i<2;i++){for(let j=0;j<2;j++)for(let k=0;k<6;k++)JTJ[i][j]+=J[k][i]*J[k][j];for(let k=0;k<6;k++)JTF[i]+=J[k][i]*Fx[k];}
+        const A=[[JTJ[0][0]+lam,JTJ[0][1]],[JTJ[1][0],JTJ[1][1]+lam]];
+        const det=A[0][0]*A[1][1]-A[0][1]*A[1][0];
+        if(Math.abs(det)<1e-30)break;
+        let d=[(A[1][1]*(-JTF[0])-A[0][1]*(-JTF[1]))/det,(-A[1][0]*(-JTF[0])+A[0][0]*(-JTF[1]))/det];
+        const dn=Math.sqrt(d[0]**2+d[1]**2);if(dn>0.3){d[0]*=0.3/dn;d[1]*=0.3/dn;}
+        const t2t=t2+d[0],t3t=t3+d[1],Ft=F(t2t,t3t),et=norm(Ft);
+        if(et<err){t2=t2t;t3=t3t;Fx=Ft;err=et;lam=Math.max(lam/2,1e-12);}else{lam=Math.min(lam*4,1e8);}
+    }
+    return {t2:wrap(t2),t3:wrap(t3),err,ok:err<1e-8};
+}
+
+function getPos(t1,t2,t3) {
+    const t6=[t1,t2,t3,t1,t2,t3], a6=[...P.al,...P.al], aa=[...P.a,...P.a], RR=[...P.R,...P.R];
+    const { Q_cum } = buildTensorBases(t6, a6);
+    
+    const pos=[[0,0,0]];
+    let p=[0,0,0];
+    
+    for(let n=0;n<6;n++){
+        const p_n = [
+            aa[n] * Math.cos(t6[n]),
+            aa[n] * Math.sin(t6[n]),
+            RR[n]
+        ];
+        const p_global = mv(Q_cum[n], p_n);
+        p = [p[0] + p_global[0], p[1] + p_global[1], p[2] + p_global[2]];
+        pos.push([...p]);
+    }
+    
+    // Center the mechanism
+    let cx=0,cy=0,cz=0;
+    for(let i=0;i<7;i++){cx+=pos[i][0];cy+=pos[i][1];cz+=pos[i][2];}
+    cx/=7;cy/=7;cz/=7;
+    return pos.map(pp=>[pp[0]-cx,pp[1]-cy,pp[2]-cz]);
+}
+
+// ============================================================
+// PHYSICAL LIMITS (computed from collision detection)
+// ============================================================
+let LIMITS = {
+    1: { regions: [], activeRegion: 0 },
+    2: { regions: [], activeRegion: 0 }
+};
+
+function getActiveLimit(formNum) {
+    const L = LIMITS[formNum];
+    if (!L.regions || L.regions.length === 0) return { min: -180, max: 180, wraps: false };
+    return L.regions[L.activeRegion] || L.regions[0];
+}
+
+function dot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
+function sub(a,b){return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+function add(a,b){return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
+function mul(a,s){return [a[0]*s,a[1]*s,a[2]*s];}
+function dist(a,b){return norm(sub(a,b));}
+
+function pointSegmentDistance(p, a, b) {
+    const ab = sub(b,a);
+    const ap = sub(p,a);
+    const denom = dot(ab,ab);
+    let t = denom > 1e-12 ? dot(ap,ab)/denom : 0.0;
+    t = Math.max(0, Math.min(1, t));
+    const c = add(a, mul(ab, t));
+    return dist(p, c);
+}
+
+// Robust segment–segment distance (Dan Sunday / SoftSurfer style)
+function segmentDistance(p0, p1, q0, q1) {
+    const u = sub(p1, p0);
+    const v = sub(q1, q0);
+    const w = sub(p0, q0);
+    const a = dot(u,u);
+    const b = dot(u,v);
+    const c = dot(v,v);
+    const d = dot(u,w);
+    const e = dot(v,w);
+    const D = a*c - b*b;
+    let sN = 0.0, sD = D;
+    let tN = 0.0, tD = D;
+    const EPS = 1e-12;
+
+    if (D < EPS) {
+        // almost parallel
+        sN = 0.0; sD = 1.0;
+        tN = e;   tD = c;
+    } else {
+        sN = (b*e - c*d);
+        tN = (a*e - b*d);
+        if (sN < 0.0) {
+            sN = 0.0;
+            tN = e;
+            tD = c;
+        } else if (sN > sD) {
+            sN = sD;
+            tN = e + b;
+            tD = c;
+        }
+    }
+
+    if (tN < 0.0) {
+        tN = 0.0;
+        if (-d < 0.0) {
+            sN = 0.0;
+        } else if (-d > a) {
+            sN = sD;
+        } else {
+            sN = -d;
+            sD = a;
+        }
+    } else if (tN > tD) {
+        tN = tD;
+        if ((-d + b) < 0.0) {
+            sN = 0.0;
+        } else if ((-d + b) > a) {
+            sN = sD;
+        } else {
+            sN = (-d + b);
+            sD = a;
+        }
+    }
+
+    const sc = Math.abs(sD) < EPS ? 0.0 : (sN / sD);
+    const tc = Math.abs(tD) < EPS ? 0.0 : (tN / tD);
+
+    const dP = sub(add(w, mul(u, sc)), mul(v, tc));
+    return norm(dP);
+}
+
+function collisionRadii() {
+    const linkW = GEOM.linkBox.width;
+    const linkD = GEOM.linkBox.depth;
+    const linkR = 0.5 * Math.sqrt(linkW*linkW + linkD*linkD); // bounding circle radius of box cross-section
+    return { joint: GEOM.jointRadius, offset: GEOM.offsetRadius, link: linkR };
+}
+
+function polylineVertices(t1, t2, t3) {
+    const t6=[t1,t2,t3,t1,t2,t3], a6=[...P.al,...P.al], aa=[...P.a,...P.a], RR=[...P.R,...P.R];
+    const { Q_cum } = buildTensorBases(t6, a6);
+
+    const V = [[0,0,0]];
+    let p = [0,0,0];
+    for (let n = 0; n < 6; n++) {
+        const e3 = mv(Q_cum[n], [0, 0, 1]);
+        const pAfterR = [p[0] + RR[n]*e3[0], p[1] + RR[n]*e3[1], p[2] + RR[n]*e3[2]];
+        V.push(pAfterR);
+        
+        const e1next = mv(Q_cum[n+1], [1, 0, 0]);
+        p = [pAfterR[0] + aa[n]*e1next[0], pAfterR[1] + aa[n]*e1next[1], pAfterR[2] + aa[n]*e1next[2]];
+        V.push([...p]);
+    }
+
+    // Centering (translation invariant, but makes numbers nicer)
+    let cx=0, cy=0, cz=0;
+    for (const v of V) { cx += v[0]; cy += v[1]; cz += v[2]; }
+    cx /= V.length; cy /= V.length; cz /= V.length;
+    for (const v of V) { v[0]-=cx; v[1]-=cy; v[2]-=cz; }
+    return V;
+}
+
+function minCollisionClearance(t1, t2, t3) {
+    const V = polylineVertices(t1, t2, t3);
+    const R = collisionRadii();
+
+    // 12 segments along the polyline: segment i is V[i] -> V[i+1]
+    const segR = [];
+    for (let i = 0; i < 12; i++) segR.push((i % 2 === 0) ? R.offset : R.link);
+
+    // joint spheres at V[2n+1], n=0..5
+    const spheres = [];
+    for (let n = 0; n < 6; n++) spheres.push({ vid: 2*n+1, c: V[2*n+1], r: R.joint });
+
+    let minClr = Infinity;
+
+    // segment-segment (skip adjacent along polyline)
+    for (let i = 0; i < 12; i++) {
+        for (let j = i + 1; j < 12; j++) {
+            if (Math.abs(i - j) <= 1) continue;
+            if (i === 0 && j === 11) continue; // ring adjacency
+            const d = segmentDistance(V[i], V[i+1], V[j], V[j+1]);
+            const clr = d - (segR[i] + segR[j]);
+            if (clr < minClr) minClr = clr;
+        }
+    }
+
+    // segment-sphere (skip spheres at segment endpoints)
+    for (let i = 0; i < 12; i++) {
+        for (const s of spheres) {
+            if (s.vid === i || s.vid === i+1) continue;
+            const d = pointSegmentDistance(s.c, V[i], V[i+1]);
+            const clr = d - (s.r + segR[i]);
+            if (clr < minClr) minClr = clr;
+        }
+    }
+
+    // sphere-sphere
+    for (let i = 0; i < spheres.length; i++) {
+        for (let j = i + 1; j < spheres.length; j++) {
+            const d = dist(spheres[i].c, spheres[j].c);
+            const clr = d - (spheres[i].r + spheres[j].r);
+            if (clr < minClr) minClr = clr;
+        }
+    }
+
+    return minClr;
+}
+
+function computeLimits(formNum) {
+    const c = formNum === 1 ? curves.f1 : curves.f2;
+    const step = CURVE_STEP;
+    
+    // Scan ALL angles to find ALL valid regions
+    const regions = [];
+    let inValid = false;
+    let regionStart = null;
+    
+    for (let t1d = -180; t1d <= 180; t1d += step) {
+        if (!c[t1d]) continue;
+        const minClr = minCollisionClearance(t1d * Math.PI/180, c[t1d].t2 * Math.PI/180, c[t1d].t3 * Math.PI/180);
+        const isValid = (minClr >= 0);
+        
+        if (isValid && !inValid) {
+            regionStart = t1d;
+            inValid = true;
+        } else if (!isValid && inValid) {
+            // Only add regions with reasonable span (> 5°)
+            if (t1d - step - regionStart > 5) {
+                regions.push({ min: regionStart, max: t1d - step, wraps: false });
+            }
+            inValid = false;
+        }
+    }
+    
+    // Close last region if still valid
+    if (inValid && regionStart !== null) {
+        if (180 - regionStart > 5) {
+            regions.push({ min: regionStart, max: 180, wraps: false });
+        }
+    }
+    
+    // Check if regions at -180 and +180 can be merged (wrapping)
+    // Find region ending at 180 and region starting at -180
+    const regionAt180 = regions.find(r => r.max === 180);
+    const regionAtMinus180 = regions.find(r => r.min === -180);
+    
+    if (regionAt180 && regionAtMinus180 && regionAt180 !== regionAtMinus180) {
+        // Check continuity: is θ₂,θ₃ continuous across the boundary?
+        const c180 = c[180];
+        const cMinus180 = c[-180];
+        if (c180 && cMinus180) {
+            // Check if solutions are close (within ~5°)
+            const dt2 = Math.abs(c180.t2 - cMinus180.t2);
+            const dt3 = Math.abs(c180.t3 - cMinus180.t3);
+            if (dt2 < 5 && dt3 < 5) {
+                // Merge into a wrapping region
+                // Remove the two separate regions
+                const idx180 = regions.indexOf(regionAt180);
+                const idxMinus180 = regions.indexOf(regionAtMinus180);
+                
+                // Create merged wrapping region
+                // The region goes from regionAt180.min through +180/-180 to regionAtMinus180.max
+                const wrappedRegion = {
+                    min: regionAt180.min,
+                    max: regionAtMinus180.max,
+                    wraps: true,
+                    // Store the actual span for display purposes
+                    span: (180 - regionAt180.min) + (regionAtMinus180.max + 180)
+                };
+                
+                // Remove old regions and add merged one
+                regions.splice(Math.max(idx180, idxMinus180), 1);
+                regions.splice(Math.min(idx180, idxMinus180), 1);
+                regions.push(wrappedRegion);
+            }
+        }
+    }
+    
+    // Find which region contains θ₁=0 (or closest to 0)
+    let activeRegion = 0;
+    for (let i = 0; i < regions.length; i++) {
+        const r = regions[i];
+        if (r.wraps) {
+            // Wrapping region: 0 is contained if it's between min and 180, or between -180 and max
+            if (0 >= r.min || 0 <= r.max) {
+                activeRegion = i;
+                break;
+            }
+        } else if (r.min <= 0 && r.max >= 0) {
+            activeRegion = i;
+            break;
+        }
+    }
+    
+    return { regions, activeRegion };
+}
+
+// ============================================================
+// CURVES
+// ============================================================
+const CURVE_STEP = 0.25; // degrees (trade-off: speed vs smoothness)
+let curves = { f1: {}, f2: {} };
+let init1 = null, init2 = null;
+
+async function findInitialSolutions() {
+    // Grid search for solutions at θ₁=0
+    const solutions = [];
+    for (let g2 = -180; g2 <= 180; g2 += 15) {
+        for (let g3 = -180; g3 <= 180; g3 += 15) {
+            const r = solve(0, [g2*Math.PI/180, g3*Math.PI/180]);
+            if (r.ok) {
+                let unique = true;
+                for (const s of solutions) {
+                    const d = Math.sqrt(Math.pow(wrap(r.t2-s.t2),2) + Math.pow(wrap(r.t3-s.t3),2));
+                    if (d < 0.2) { unique = false; break; }
+                }
+                if (unique) solutions.push({t2: r.t2, t3: r.t3});
+            }
+        }
+    }
+    
+    if (solutions.length >= 2) {
+        // Pick two most different
+        let maxD = 0, i1 = 0, i2 = 1;
+        for (let i = 0; i < solutions.length; i++) {
+            for (let j = i+1; j < solutions.length; j++) {
+                const d = Math.sqrt(Math.pow(wrap(solutions[i].t2-solutions[j].t2),2) + Math.pow(wrap(solutions[i].t3-solutions[j].t3),2));
+                if (d > maxD) { maxD = d; i1 = i; i2 = j; }
+            }
+        }
+        init1 = solutions[i1];
+        init2 = solutions[i2];
+    } else if (solutions.length === 1) {
+        init1 = solutions[0];
+        init2 = solutions[0];
+    } else {
+        init1 = {t2: 0, t3: 0};
+        init2 = {t2: Math.PI/2, t3: -Math.PI/2};
+    }
+}
+
+async function computeCurves() {
+    curves = { f1: {}, f2: {} };
+    
+    await findInitialSolutions();
+    
+    const step = CURVE_STEP; // curve sampling step
+    
+    // Form I
+    let r = solve(0, [init1.t2, init1.t3]);
+    if (r.ok) curves.f1[0] = { t2: r.t2*180/Math.PI, t3: r.t3*180/Math.PI };
+    let g = [r.t2, r.t3];
+    
+    for (let t1d = step; t1d <= 180; t1d += step) {
+        r = solve(t1d*Math.PI/180, g);
+        if (r.ok) { g = [r.t2, r.t3]; curves.f1[t1d] = { t2: r.t2*180/Math.PI, t3: r.t3*180/Math.PI }; }
+    }
+    r = solve(0, [init1.t2, init1.t3]); g = [r.t2, r.t3];
+    for (let t1d = -step; t1d >= -180; t1d -= step) {
+        r = solve(t1d*Math.PI/180, g);
+        if (r.ok) { g = [r.t2, r.t3]; curves.f1[t1d] = { t2: r.t2*180/Math.PI, t3: r.t3*180/Math.PI }; }
+    }
+    
+    // Form II
+    r = solve(0, [init2.t2, init2.t3]);
+    if (r.ok) curves.f2[0] = { t2: r.t2*180/Math.PI, t3: r.t3*180/Math.PI };
+    g = [r.t2, r.t3];
+    
+    for (let t1d = step; t1d <= 180; t1d += step) {
+        r = solve(t1d*Math.PI/180, g);
+        if (r.ok) { g = [r.t2, r.t3]; curves.f2[t1d] = { t2: r.t2*180/Math.PI, t3: r.t3*180/Math.PI }; }
+    }
+    r = solve(0, [init2.t2, init2.t3]); g = [r.t2, r.t3];
+    for (let t1d = -step; t1d >= -180; t1d -= step) {
+        r = solve(t1d*Math.PI/180, g);
+        if (r.ok) { g = [r.t2, r.t3]; curves.f2[t1d] = { t2: r.t2*180/Math.PI, t3: r.t3*180/Math.PI }; }
+    }
+    
+    console.log("Form I at θ₁=0:", curves.f1[0]);
+    console.log("Form II at θ₁=0:", curves.f2[0]);
+    
+    // Compute physical limits
+    LIMITS[1] = computeLimits(1);
+    LIMITS[2] = computeLimits(2);
+    console.log("Form I limits:", LIMITS[1]);
+    console.log("Form II limits:", LIMITS[2]);
+}
+
+function getSol(t1d, form) {
+    const c = form === 1 ? curves.f1 : curves.f2;
+    
+    // Round to nearest 0.25
+    const step = CURVE_STEP;
+    const t1r = Math.round(t1d / step) * step;
+    if (c[t1r]) return c[t1r];
+    
+    // Find bracketing values for interpolation
+    const lo = Math.floor(t1d / step) * step;
+    const hi = lo + step;
+    
+    if (c[lo] && c[hi]) {
+        const t = (t1d - lo) / step;
+        return { 
+            t2: c[lo].t2 + t * (c[hi].t2 - c[lo].t2), 
+            t3: c[lo].t3 + t * (c[hi].t3 - c[lo].t3) 
+        };
+    }
+    return c[lo] || c[hi] || c[t1r] || { t2: 0, t3: 0 };
+}
+
+// ============================================================
+// THREE.JS - Rectangular prism links with offset cylinders
+// ============================================================
+let scene, camera, renderer;
+let jointMeshes = [], linkMeshes = [], offsetMeshes = [];
+let jointAxisArrows = [];
+let showJointAxes = false;
+
+let dragging = false, prevM = {x:0,y:0};
+let camX = -52, camY = 5, camD = 12;
+
+function initThree() {
+    const cv = document.getElementById('cv');
+    const cont = cv.parentElement;
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(50, cont.clientWidth / cont.clientHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setSize(cont.clientWidth, cont.clientHeight);
+    renderer.setClearColor(0x0d1b2a);
+    
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.6);
+    dl.position.set(5, 10, 5);
+    scene.add(dl);
+    const dl2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    dl2.position.set(-5, -5, -5);
+    scene.add(dl2);
+    
+    // Grid plane
+    const grid = new THREE.GridHelper(12, 12, 0x2a4a6a, 0x1a3a5a);
+    grid.position.y = -2;
+    scene.add(grid);
+    
+    const colors = COLOR_SCHEMES[currentScheme];
+    
+    // Create joints (spheres at joint locations)
+    for (let i = 0; i < 6; i++) {
+        const jm = new THREE.Mesh(
+            new THREE.SphereGeometry(GEOM.jointRadius, 16, 16),
+            new THREE.MeshPhongMaterial({ color: colors[i] })
+        );
+        scene.add(jm);
+        jointMeshes.push(jm);
+        
+        // Offset cylinder (along joint axis direction)
+        const om = new THREE.Mesh(
+            new THREE.CylinderGeometry(GEOM.offsetRadius, GEOM.offsetRadius, 1, 8),
+            new THREE.MeshPhongMaterial({ color: colors[i], opacity: 0.8, transparent: true })
+        );
+        scene.add(om);
+        offsetMeshes.push(om);
+        
+        // Link as rectangular prism (box)
+        const lm = new THREE.Mesh(
+            new THREE.BoxGeometry(GEOM.linkBox.width, 1, GEOM.linkBox.depth),
+            new THREE.MeshPhongMaterial({ color: colors[i] })
+        );
+        scene.add(lm);
+        linkMeshes.push(lm);
+        
+        // Joint axis arrow (e³ direction)
+        const axisArrow = new THREE.ArrowHelper(
+            new THREE.Vector3(0, 0, 1),
+            new THREE.Vector3(0, 0, 0),
+            0.8, // length
+            colors[i], // match link color
+            0.15, // head length
+            0.1   // head width
+        );
+        axisArrow.visible = false;
+        scene.add(axisArrow);
+        jointAxisArrows.push(axisArrow);
+    }
+    
+    updateCam();
+    
+    cv.addEventListener('mousedown', e => { dragging = true; prevM = {x: e.clientX, y: e.clientY}; });
+    cv.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        camX += (e.clientX - prevM.x) * 0.4;
+        camY = Math.max(-85, Math.min(85, camY + (e.clientY - prevM.y) * 0.3));
+        updateCam();
+        prevM = {x: e.clientX, y: e.clientY};
+    });
+    cv.addEventListener('mouseup', () => dragging = false);
+    cv.addEventListener('mouseleave', () => dragging = false);
+    cv.addEventListener('wheel', e => {
+        e.preventDefault();
+        camD = Math.max(4, Math.min(25, camD + e.deltaY * 0.01));
+        updateCam();
+    }, {passive: false});
+    
+    window.addEventListener('resize', () => {
+        camera.aspect = cont.clientWidth / cont.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setSize(cont.clientWidth, cont.clientHeight);
+        // Redraw curves to fit new canvas size
+        drawCurves();
+    });
+    
+    animate();
+}
+
+function updateCam() {
+    const rx = camX * Math.PI/180, ry = camY * Math.PI/180;
+    camera.position.set(camD * Math.cos(ry) * Math.sin(rx), camD * Math.sin(ry), camD * Math.cos(ry) * Math.cos(rx));
+    camera.lookAt(0, 0, 0);
+    document.getElementById('viewInfo').textContent = `${Math.round(camX)}° × ${Math.round(camY)}°`;
+}
+
+function resetView() {
+    camX = -52; camY = 5; camD = 12;
+    updateCam();
+}
+
+function updateColors() {
+    const colors = COLOR_SCHEMES[currentScheme];
+    for (let i = 0; i < 6; i++) {
+        jointMeshes[i].material.color.setHex(colors[i]);
+        linkMeshes[i].material.color.setHex(colors[i]);
+        offsetMeshes[i].material.color.setHex(colors[i]);
+        
+        // Update arrow colors to match links
+        if (jointAxisArrows[i]) {
+            jointAxisArrows[i].setColor(colors[i]);
+        }
+    }
+}
+
+function updateVis(pos, t1, t2, t3) {
+    // Get full basis information for proper orientation
+    const t6 = [t1, t2, t3, t1, t2, t3];
+    const a6 = [...P.al, ...P.al];
+    const aa = [...P.a, ...P.a];
+    const RR = [...P.R, ...P.R];
+    const B = bases(t6, a6);
+    
+    // Compute positions with offset information
+    const jointPos = [[0,0,0]];
+    const offsetStart = [[0,0,0]];
+    const offsetEnd = [[0,0,0]];
+    
+    let p = [0, 0, 0];
+    for (let n = 0; n < 6; n++) {
+        const e3 = [B[n][0][2], B[n][1][2], B[n][2][2]];
+        const e1 = [B[n+1][0][0], B[n+1][1][0], B[n+1][2][0]];
+        
+        // Offset start (before R offset)
+        offsetStart.push([...p]);
+        
+        // After R offset
+        const pAfterR = [p[0] + RR[n]*e3[0], p[1] + RR[n]*e3[1], p[2] + RR[n]*e3[2]];
+        offsetEnd.push([...pAfterR]);
+        
+        // After link (full position)
+        p = [pAfterR[0] + aa[n]*e1[0], pAfterR[1] + aa[n]*e1[1], pAfterR[2] + aa[n]*e1[2]];
+        jointPos.push([...p]);
+    }
+    
+    // Center everything
+    let cx = 0, cy = 0, cz = 0;
+    for (let i = 0; i < 7; i++) { cx += jointPos[i][0]; cy += jointPos[i][1]; cz += jointPos[i][2]; }
+    cx /= 7; cy /= 7; cz /= 7;
+    
+    for (let i = 0; i < 7; i++) {
+        jointPos[i][0] -= cx; jointPos[i][1] -= cy; jointPos[i][2] -= cz;
+        offsetStart[i][0] -= cx; offsetStart[i][1] -= cy; offsetStart[i][2] -= cz;
+        offsetEnd[i][0] -= cx; offsetEnd[i][1] -= cy; offsetEnd[i][2] -= cz;
+    }
+    
+    // Update joint spheres (at offset end positions, which is where links start)
+    for (let i = 0; i < 6; i++) {
+        jointMeshes[i].position.set(offsetEnd[i+1][0], offsetEnd[i+1][1], offsetEnd[i+1][2]);
+    }
+    
+    // Update offset cylinders (from joint to offset end)
+    for (let i = 0; i < 6; i++) {
+        const p1 = offsetStart[i+1];
+        const p2 = offsetEnd[i+1];
+        const mx = (p1[0]+p2[0])/2, my = (p1[1]+p2[1])/2, mz = (p1[2]+p2[2])/2;
+        const dx = p2[0]-p1[0], dy = p2[1]-p1[1], dz = p2[2]-p1[2];
+        const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        
+        offsetMeshes[i].position.set(mx, my, mz);
+        offsetMeshes[i].scale.set(1, Math.max(len, 0.01), 1);
+        
+        if (len > 0.01) {
+            const dir = new THREE.Vector3(dx, dy, dz).normalize();
+            const q = new THREE.Quaternion();
+            q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+            offsetMeshes[i].quaternion.copy(q);
+        }
+        
+        offsetMeshes[i].visible = len > 0.02;
+    }
+    
+    // Update link rectangular prisms (from offset end to next joint)
+    for (let i = 0; i < 6; i++) {
+        const p1 = offsetEnd[i+1];
+        const p2 = jointPos[i+1];
+        const mx = (p1[0]+p2[0])/2, my = (p1[1]+p2[1])/2, mz = (p1[2]+p2[2])/2;
+        const dx = p2[0]-p1[0], dy = p2[1]-p1[1], dz = p2[2]-p1[2];
+        const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        
+        linkMeshes[i].position.set(mx, my, mz);
+        linkMeshes[i].scale.set(1, Math.max(len, 0.01), 1);
+        
+        if (len > 0.01) {
+            // Get the link direction
+            const linkDir = new THREE.Vector3(dx, dy, dz).normalize();
+            
+            // Get the e1 axis for this link (defines the twist orientation)
+            const e1 = new THREE.Vector3(B[i+1][0][0], B[i+1][1][0], B[i+1][2][0]);
+            
+            // Create rotation: Y-axis along link, X-axis along e1 (projected)
+            const yAxis = linkDir;
+            // Project e1 onto plane perpendicular to linkDir
+            const e1proj = e1.clone().sub(yAxis.clone().multiplyScalar(e1.dot(yAxis)));
+            if (e1proj.length() > 0.01) {
+                e1proj.normalize();
+                const zAxis = new THREE.Vector3().crossVectors(e1proj, yAxis).normalize();
+                
+                const rotMatrix = new THREE.Matrix4();
+                rotMatrix.makeBasis(e1proj, yAxis, zAxis);
+                linkMeshes[i].quaternion.setFromRotationMatrix(rotMatrix);
+            } else {
+                const q = new THREE.Quaternion();
+                q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), linkDir);
+                linkMeshes[i].quaternion.copy(q);
+            }
+        }
+    }
+    
+    // Update joint axis arrows (show e³ direction)
+    for (let i = 0; i < 6; i++) {
+        if (showJointAxes) {
+            const e3 = new THREE.Vector3(B[i][0][2], B[i][1][2], B[i][2][2]);
+            const jointPosVec = offsetStart[i+1]; // Position at joint
+            
+            jointAxisArrows[i].position.set(jointPosVec[0], jointPosVec[1], jointPosVec[2]);
+            jointAxisArrows[i].setDirection(e3);
+            jointAxisArrows[i].setLength(0.8, 0.15, 0.1);
+            jointAxisArrows[i].visible = true;
+        } else {
+            jointAxisArrows[i].visible = false;
+        }
+    }
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+
+// ============================================================
+// UI
+// ============================================================
+let t1d = 0, form = 2, playing = false, speed = 1;
+let direction = 1; // For oscillation
+
+function normalizeAngleDeg(val) {
+    while (val > 180) val -= 360;
+    while (val < -180) val += 360;
+    return val;
+}
+
+function clampToLimits(val) {
+    const lim = getActiveLimit(form);
+
+    // Manual control (slider/keyboard): allow continuous sweep even through collision zones.
+    // Only the play/oscillation mode should respect collision-based limits.
+    if (!playing || lim.wraps) {
+        return normalizeAngleDeg(val);
+    }
+
+    // Play mode (non-wrapping): bounce within the active collision-free region.
+    return Math.max(lim.min, Math.min(lim.max, val));
+}
+
+function isInActiveRegion(val) {
+    const lim = getActiveLimit(form);
+    if (lim.wraps) {
+        // Wrapping region: valid if >= min OR <= max
+        return val >= lim.min || val <= lim.max;
+    }
+    return val >= lim.min && val <= lim.max;
+}
+function findContainingRegionIndex(formNum, val) {
+    const L = LIMITS[formNum];
+    const regions = (L && L.regions) ? L.regions : [];
+    for (let i = 0; i < regions.length; i++) {
+        const r = regions[i];
+        const inRegion = r.wraps ? (val >= r.min || val <= r.max) : (val >= r.min && val <= r.max);
+        if (inRegion) return i;
+    }
+    return -1;
+}
+
+
+function updateSliderRange() {
+    const slider = document.getElementById('t1slider');
+    const lim = getActiveLimit(form);
+
+    // Always allow full sweep for manual control (keyboard arrows / dragging).
+    slider.min = -180;
+    slider.max = 180;
+
+    // Still display the active collision-free region bounds for reference.
+    if (lim.wraps) {
+        document.getElementById('minLabel').textContent = lim.min + '° ↔';
+        document.getElementById('maxLabel').textContent = '↔ ' + lim.max + '°';
+    } else {
+        document.getElementById('minLabel').textContent = lim.min + '°';
+        document.getElementById('maxLabel').textContent = lim.max + '°';
+    }
+
+    // Keep the slider value normalized (no clamping here).
+    t1d = normalizeAngleDeg(t1d);
+    slider.value = t1d;
+}
+
+function updateLimitIndicator() {
+    const lim = getActiveLimit(form);
+    const ind = document.getElementById('limitInd');
+    const margin = 2;
+
+    const L = LIMITS[form];
+    const regions = L.regions || [];
+    const totalRegions = regions.length;
+
+    // Determine where θ₁ currently sits
+    const activeIdx = (typeof L.activeRegion === 'number') ? L.activeRegion : 0;
+    const idx = findContainingRegionIndex(form, t1d);
+    const inAnyRegion = idx !== -1;
+    const inActive = (idx === activeIdx) || (lim.wraps ? isInActiveRegion(t1d) : (t1d >= lim.min && t1d <= lim.max));
+
+    if (lim.wraps) {
+        // Wrapping region - check if in valid zone
+        if (isInActiveRegion(t1d)) {
+            ind.className = 'limit-indicator ok';
+            const span = lim.span ? lim.span.toFixed(0) : '360';
+            ind.textContent = `🔄 Continuous loop (${span}° span)`;
+        } else {
+            ind.className = 'limit-indicator at-limit';
+            ind.textContent = '⛔ Outside valid range';
+        }
+        return;
+    }
+
+    // Non-wrapping region (including Form II free sweep)
+    if (!inAnyRegion) {
+        ind.className = 'limit-indicator at-limit';
+        ind.textContent = '⛔ Collision / outside valid range';
+        return;
+    }
+
+    if (!inActive && totalRegions > 1) {
+        ind.className = 'limit-indicator ok';
+        ind.textContent = `✓ Region ${idx + 1}/${totalRegions} (click curve to select)`;
+        return;
+    }
+
+    if (t1d <= lim.min + margin) {
+        ind.className = 'limit-indicator at-limit';
+        ind.textContent = '⛔ At minimum limit';
+    } else if (t1d >= lim.max - margin) {
+        ind.className = 'limit-indicator at-limit';
+        ind.textContent = '⛔ At maximum limit';
+    } else {
+        ind.className = 'limit-indicator ok';
+        if (totalRegions > 1) {
+            const regionNum = activeIdx + 1;
+            ind.textContent = `✓ Region ${regionNum}/${totalRegions} (click curve to change)`;
+        } else {
+            ind.textContent = '✓ Within valid range';
+        }
+    }
+}
+
+function updateVis3D() {
+    // Only update 3D visualization - no DOM
+    const sol = getSol(t1d, form);
+    if (!sol) return;
+    
+    const t1rad = t1d * Math.PI/180;
+    const t2rad = sol.t2 * Math.PI/180;
+    const t3rad = sol.t3 * Math.PI/180;
+    
+    const pos = getPos(t1rad, t2rad, t3rad);
+    updateVis(pos, t1rad, t2rad, t3rad);
+}
+
+function updateDisplay() {
+    // Update DOM elements
+    const sol = getSol(t1d, form);
+    if (!sol) return;
+    
+    // Get colors matching the active form's plot
+    const colors = COLOR_SCHEMES[currentScheme];
+    const c1 = colors[0]; // θ₁ color (first link color)
+    const c2 = form === 1 ? colors[1] : colors[4];
+    const c3 = form === 1 ? colors[2] : colors[5];
+    const c1hex = '#' + c1.toString(16).padStart(6, '0');
+    const c2hex = '#' + c2.toString(16).padStart(6, '0');
+    const c3hex = '#' + c3.toString(16).padStart(6, '0');
+    
+    const t1el = document.getElementById('t1disp');
+    t1el.textContent = t1d.toFixed(1) + '°';
+    t1el.style.color = c1hex;
+    document.getElementById('t1slider').value = t1d;
+    
+    const t2el = document.getElementById('t2disp');
+    const t3el = document.getElementById('t3disp');
+    t2el.textContent = sol.t2.toFixed(1) + '°';
+    t3el.textContent = sol.t3.toFixed(1) + '°';
+    t2el.style.color = c2hex;
+    t3el.style.color = c3hex;
+    
+    const s1el = document.getElementById('s1');
+    s1el.textContent = t1d.toFixed(1) + '°';
+    s1el.style.color = c1hex;
+    
+    const s2el = document.getElementById('s2');
+    const s3el = document.getElementById('s3');
+    s2el.textContent = sol.t2.toFixed(1) + '°';
+    s3el.textContent = sol.t3.toFixed(1) + '°';
+    s2el.style.color = c2hex;
+    s3el.style.color = c3hex;
+    
+    updateLimitIndicator();
+    drawCurves();
+}
+
+function update() {
+    updateVis3D();
+    updateDisplay();
+}
+
+document.getElementById('t1slider').addEventListener('input', function() {
+    t1d = parseFloat(this.value);
+    update();
+});
+
+document.getElementById('speedSlider').addEventListener('input', function() {
+    speed = parseFloat(this.value);
+    document.getElementById('speedDisp').textContent = speed.toFixed(1) + 'x';
+});
+
+function toggleForm() {
+    form = form === 1 ? 2 : 1;
+    const btn = document.getElementById('formBtn');
+    btn.textContent = 'Form ' + (form === 1 ? 'I' : 'II');
+    btn.classList.toggle('form-i', form === 1);
+    document.getElementById('c1box').classList.toggle('active', form === 1);
+    document.getElementById('c2box').classList.toggle('active', form === 2);
+    updateSliderRange();
+    update();
+}
+
+function togglePlay() {
+    playing = !playing;
+    const btn = document.getElementById('playBtn');
+    btn.textContent = playing ? '⏸ Pause' : '▶ Play (Oscillate)';
+    btn.classList.toggle('playing', playing);
+    if (playing) { 
+        lastT = performance.now();
+        // Don't reset direction - continue in same direction
+        requestAnimationFrame(playLoop); 
+    }
+}
+
+let lastT = 0;
+let lastDOMUpdate = 0;
+let animationT1d = 0; // For smooth animation interpolation
+
+function playLoop(t) {
+    if (!playing) return;
+    
+    // Cap delta time to prevent jumps after tab switch
+    const dt = Math.min((t - lastT) / 1000, 0.05);
+    lastT = t;
+    
+    let lim = getActiveLimit(form);
+    // Base speed: 20 degrees per second at 1x
+    const baseSpeed = 20;
+    t1d += dt * baseSpeed * speed * direction;
+    
+    // Handle limits - wrap or bounce depending on region type
+    if (lim.wraps) {
+        // Wrapping region: continuous motion through ±180°
+        if (direction > 0) {
+            // Moving positive: if past 180, wrap to -180 side
+            if (t1d > 180) {
+                t1d = -180 + (t1d - 180);
+            }
+            // Check if we've completed the loop (past the end on the negative side)
+            if (t1d > lim.max && t1d < lim.min) {
+                t1d = lim.max;
+                direction = -1;
+            }
+        } else {
+            // Moving negative: if past -180, wrap to +180 side
+            if (t1d < -180) {
+                t1d = 180 + (t1d + 180);
+            }
+            // Check if we've completed the loop (past the start on the positive side)
+            if (t1d < lim.min && t1d > lim.max) {
+                t1d = lim.min;
+                direction = 1;
+            }
+        }
+    } else {
+        // Non-wrapping region: bounce at limits
+        if (t1d >= lim.max) {
+            t1d = lim.max;
+            direction = -1;
+        } else if (t1d <= lim.min) {
+            t1d = lim.min;
+            direction = 1;
+        }
+    }
+    
+    // Always update 3D (smooth)
+    updateVis3D();
+    
+    // Throttle DOM updates (every 80ms)
+    if (t - lastDOMUpdate > 80) {
+        lastDOMUpdate = t;
+        updateDisplay();
+    }
+    
+    requestAnimationFrame(playLoop);
+}
+
+function setColorScheme(scheme) {
+    currentScheme = scheme;
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    updateColors();
+    updateLinkTable();
+}
+
+function toggleJointAxes() {
+    showJointAxes = document.getElementById('showJointAxes').checked;
+    document.getElementById('legendAxis').style.display = showJointAxes ? 'flex' : 'none';
+    update();
+}
+
+// ============================================================
+// PARAMETER MODAL
+// ============================================================
+function openParams() {
+    document.getElementById('a1').value = P.a[0];
+    document.getElementById('a2').value = P.a[1];
+    document.getElementById('a3').value = P.a[2];
+    document.getElementById('al1').value = Math.round(P.al[0] * 180 / Math.PI);
+    document.getElementById('al2').value = Math.round(P.al[1] * 180 / Math.PI);
+    document.getElementById('al3').value = Math.round(P.al[2] * 180 / Math.PI);
+    document.getElementById('R1').value = P.R[0];
+    document.getElementById('R2').value = P.R[1];
+    document.getElementById('R3').value = P.R[2];
+    document.getElementById('paramModal').classList.add('show');
+}
+
+function closeParams() {
+    document.getElementById('paramModal').classList.remove('show');
+}
+
+function resetParams() {
+    // Reset to default values
+    document.getElementById('a1').value = 2.4;
+    document.getElementById('a2').value = 2.9;
+    document.getElementById('a3').value = 1.5;
+    document.getElementById('al1').value = 40;
+    document.getElementById('al2').value = 80;
+    document.getElementById('al3').value = 130;
+    document.getElementById('R1').value = 0.5;
+    document.getElementById('R2').value = 0.55;
+    document.getElementById('R3').value = 0.42;
+}
+
+async function applyParams() {
+    P.a = [
+        parseFloat(document.getElementById('a1').value),
+        parseFloat(document.getElementById('a2').value),
+        parseFloat(document.getElementById('a3').value)
+    ];
+    P.al = [
+        parseFloat(document.getElementById('al1').value) * Math.PI / 180,
+        parseFloat(document.getElementById('al2').value) * Math.PI / 180,
+        parseFloat(document.getElementById('al3').value) * Math.PI / 180
+    ];
+    P.R = [
+        parseFloat(document.getElementById('R1').value),
+        parseFloat(document.getElementById('R2').value),
+        parseFloat(document.getElementById('R3').value)
+    ];
+    
+    closeParams();
+    document.getElementById('loading').classList.remove('hidden');
+    
+    await new Promise(r => setTimeout(r, 50));
+    await computeCurves();
+    
+    document.getElementById('loading').classList.add('hidden');
+    updateSliderRange();
+    updateLinkTable();
+    update();
+}
+
+// ============================================================
+// CURVES DRAWING
+// ============================================================
+function drawCurves() {
+    const colors = COLOR_SCHEMES[currentScheme];
+    const c2_1 = '#' + colors[1].toString(16).padStart(6, '0');
+    const c3_1 = '#' + colors[2].toString(16).padStart(6, '0');
+    const c2_2 = '#' + colors[4].toString(16).padStart(6, '0');
+    const c3_2 = '#' + colors[5].toString(16).padStart(6, '0');
+    
+    // Update legend colors
+    document.getElementById('leg1t2').style.color = c2_1;
+    document.getElementById('leg1t3').style.color = c3_1;
+    document.getElementById('leg2t2').style.color = c2_2;
+    document.getElementById('leg2t3').style.color = c3_2;
+    
+    drawCurve('c1', curves.f1, c2_1, c3_1, 1);
+    drawCurve('c2', curves.f2, c2_2, c3_2, 2);
+}
+
+// Click handler for selecting regions
+function handleCurveClick(e, formNum) {
+    const cv = e.target;
+    const rect = cv.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const w = rect.width;
+    
+    // Convert x to θ₁
+    const t1Click = (x / w) * 360 - 180;
+    
+    // Find which region was clicked
+    const L = LIMITS[formNum];
+    if (!L.regions) return;
+    
+    for (let i = 0; i < L.regions.length; i++) {
+        const r = L.regions[i];
+        let inRegion = false;
+        
+        if (r.wraps) {
+            // Wrapping region: click is in region if >= min OR <= max
+            inRegion = (t1Click >= r.min || t1Click <= r.max);
+        } else {
+            inRegion = (t1Click >= r.min && t1Click <= r.max);
+        }
+        
+        if (inRegion) {
+            // Select this region
+            L.activeRegion = i;
+            
+            // If clicking on a different form, switch to it
+            if (formNum !== form) {
+                form = formNum;
+                const btn = document.getElementById('formBtn');
+                btn.textContent = 'Form ' + (form === 1 ? 'I' : 'II');
+                btn.classList.toggle('form-i', form === 1);
+                document.getElementById('c1box').classList.toggle('active', form === 1);
+                document.getElementById('c2box').classList.toggle('active', form === 2);
+            }
+            
+            // Move to clicked position (same behavior for both forms)
+            t1d = t1Click;
+            direction = 1; // Reset direction
+            updateSliderRange();
+            update();
+            return;
+        }
+    }
+}
+
+// Setup click handlers after DOM loads
+function setupCurveClickHandlers() {
+    document.getElementById('c1').addEventListener('click', e => handleCurveClick(e, 1));
+    document.getElementById('c2').addEventListener('click', e => handleCurveClick(e, 2));
+    
+    // Add cursor pointer style
+    document.getElementById('c1').style.cursor = 'pointer';
+    document.getElementById('c2').style.cursor = 'pointer';
+}
+
+function drawCurve(id, data, c2, c3, f) {
+    const cv = document.getElementById(id);
+    const ctx = cv.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = cv.clientWidth * dpr;
+    cv.height = cv.clientHeight * dpr;
+    ctx.scale(dpr, dpr);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, w, h);
+    
+    const keys = Object.keys(data).map(Number).sort((a,b) => a - b);
+    if (keys.length < 2) return;
+    
+    let minY = Infinity, maxY = -Infinity;
+    for (const k of keys) { minY = Math.min(minY, data[k].t2, data[k].t3); maxY = Math.max(maxY, data[k].t2, data[k].t3); }
+    const pad = (maxY - minY) * 0.1 || 10; minY -= pad; maxY += pad;
+    
+    const xS = t1 => ((t1 + 180) / 360) * w;
+    const yS = t => h - ((t - minY) / (maxY - minY)) * h;
+    
+    const L = LIMITS[f];
+    const activeRegion = L.activeRegion || 0;
+    const regions = L.regions || [];
+    
+    // Shade all collision regions in red first
+    ctx.fillStyle = 'rgba(230,57,70,0.15)';
+    ctx.fillRect(0, 0, w, h);
+    
+    // Shade all valid regions in green (inactive ones lighter)
+    for (let i = 0; i < regions.length; i++) {
+        const r = regions[i];
+        const isActive = (i === activeRegion);
+        ctx.fillStyle = isActive ? 'rgba(0,180,216,0.15)' : 'rgba(0,180,216,0.08)';
+        ctx.strokeStyle = isActive ? 'rgba(0,180,216,0.6)' : 'rgba(0,180,216,0.3)';
+        ctx.lineWidth = isActive ? 2 : 1;
+        
+        if (r.wraps) {
+            // Wrapping region: draw two parts (min to +180) and (-180 to max)
+            // Part 1: from min to +180
+            ctx.fillRect(xS(r.min), 0, xS(180) - xS(r.min), h);
+            ctx.strokeRect(xS(r.min), 0, xS(180) - xS(r.min), h);
+            // Part 2: from -180 to max
+            ctx.fillRect(xS(-180), 0, xS(r.max) - xS(-180), h);
+            ctx.strokeRect(xS(-180), 0, xS(r.max) - xS(-180), h);
+        } else {
+            ctx.fillRect(xS(r.min), 0, xS(r.max) - xS(r.min), h);
+            ctx.strokeRect(xS(r.min), 0, xS(r.max) - xS(r.min), h);
+        }
+    }
+    
+    // Grid at 0
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xS(0), 0); ctx.lineTo(xS(0), h);
+    ctx.stroke();
+    
+    // Draw curves - gray in invalid, colored in valid
+    const activeLim = regions[activeRegion] || { min: -180, max: 180, wraps: false };
+    
+    // θ₂ curve - all gray first
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath();
+    let first = true;
+    for (const k of keys) {
+        const x = xS(k), y = yS(data[k].t2);
+        if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    
+    // θ₃ curve - all gray first
+    ctx.beginPath();
+    first = true;
+    for (const k of keys) {
+        const x = xS(k), y = yS(data[k].t3);
+        if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw colored portions for ALL valid regions
+    for (let ri = 0; ri < regions.length; ri++) {
+        const r = regions[ri];
+        const isActive = (ri === activeRegion);
+        const alpha = isActive ? 1.0 : 0.5;
+        
+        // Helper function to check if key is in region
+        const inRegion = (k) => {
+            if (r.wraps) {
+                return k >= r.min || k <= r.max;
+            }
+            return k >= r.min && k <= r.max;
+        };
+        
+        // θ₂ curve colored
+        ctx.strokeStyle = c2;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = isActive ? 2 : 1.5;
+        ctx.beginPath();
+        first = true;
+        for (const k of keys) {
+            if (!inRegion(k)) { first = true; continue; }
+            const x = xS(k), y = yS(data[k].t2);
+            if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        
+        // θ₃ curve (dashed)
+        ctx.strokeStyle = c3;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        first = true;
+        for (const k of keys) {
+            if (!inRegion(k)) { first = true; continue; }
+            const x = xS(k), y = yS(data[k].t3);
+            if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+    ctx.globalAlpha = 1.0;
+    
+    // Current position marker (only for active form in active region)
+    const inActiveLim = activeLim.wraps ? (t1d >= activeLim.min || t1d <= activeLim.max) : (t1d >= activeLim.min && t1d <= activeLim.max);
+    if (f === form && inActiveLim) {
+        const x = xS(t1d);
+        const sol = getSol(t1d, form);
+        if (sol) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x, 0); ctx.lineTo(x, h);
+            ctx.stroke();
+            
+            ctx.fillStyle = c2;
+            ctx.beginPath(); ctx.arc(x, yS(sol.t2), 4, 0, Math.PI*2); ctx.fill();
+            
+            ctx.fillStyle = c3;
+            ctx.beginPath(); ctx.arc(x, yS(sol.t3), 4, 0, Math.PI*2); ctx.fill();
+        }
+    }
+    
+    // Axis labels
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('-180°', 2, h - 3);
+    ctx.textAlign = 'right';
+    ctx.fillText('180°', w - 2, h - 3);
+    ctx.textAlign = 'center';
+    ctx.fillText('θ₁', w/2, h - 3);
+    
+    // Region labels (avoid overlap by stacking into rows)
+    ctx.font = '8px sans-serif';
+    ctx.textAlign = 'center';
+    const labelPad = 6;
+    const rowH = 10;
+    const maxRows = 3;
+    const rows = Array.from({ length: maxRows }, () => []);
+
+    for (let i = 0; i < regions.length; i++) {
+        const r = regions[i];
+        const label = `R${i+1}`;
+
+        // Choose a sensible center for wrapping regions
+        let centerT1;
+        if (r.wraps) {
+            const span1 = 180 - r.min;
+            const span2 = r.max + 180;
+            centerT1 = (span1 >= span2) ? (r.min + span1 / 2) : (-180 + span2 / 2);
+        } else {
+            centerT1 = (r.min + r.max) / 2;
+        }
+
+        const cx = xS(centerT1);
+        const wLabel = ctx.measureText(label).width + labelPad;
+
+        // Greedy placement into the first row without overlap
+        let row = 0;
+        for (; row < maxRows; row++) {
+            let ok = true;
+            for (const placed of rows[row]) {
+                if (Math.abs(cx - placed.cx) < (wLabel + placed.w) / 2) { ok = false; break; }
+            }
+            if (ok) break;
+        }
+        if (row >= maxRows) row = maxRows - 1;
+        rows[row].push({ cx, w: wLabel, i, label });
+    }
+
+    for (let row = 0; row < maxRows; row++) {
+        const y = 10 + row * rowH;
+        for (const p of rows[row]) {
+            ctx.fillStyle = (p.i === activeRegion) ? 'rgba(0,180,216,0.8)' : 'rgba(255,255,255,0.4)';
+            ctx.fillText(p.label, p.cx, y);
+        }
+    }
+}
+
+// ============================================================
+// LINK INFO TABLE
+// ============================================================
+function updateLinkTable() {
+    const colors = COLOR_SCHEMES[currentScheme];
+    const tbody = document.getElementById('linkTableBody');
+    
+    // Joint angle assignments: Link n has joint angle θ_n at its start
+    // For line-symmetric: θ₁=θ₄, θ₂=θ₅, θ₃=θ₆
+    const jointAngles = ['θ₁', 'θ₂', 'θ₃', 'θ₄=θ₁', 'θ₅=θ₂', 'θ₆=θ₃'];
+    
+    // Get current parameters
+    const a = P.a;
+    const alpha = P.al.map(x => (x * 180 / Math.PI).toFixed(0) + '°');
+    const R = P.R;
+    
+    // Build table rows
+    let html = '';
+    for (let i = 0; i < 6; i++) {
+        const colorHex = '#' + colors[i].toString(16).padStart(6, '0');
+        const paramIdx = i % 3; // Parameters repeat: 0,1,2,0,1,2
+        
+        html += `<tr>
+            <td class="link-name">
+                <span class="link-color" style="background:${colorHex}"></span>
+                Link ${i + 1}
+            </td>
+            <td class="joint-angle">${jointAngles[i]}</td>
+            <td>${a[paramIdx].toFixed(2)}</td>
+            <td>${alpha[paramIdx]}</td>
+            <td>${R[paramIdx].toFixed(2)}</td>
+        </tr>`;
+    }
+    
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = async () => {
+    await computeCurves();
+    document.getElementById('loading').classList.add('hidden');
+    initThree();
+    setupCurveClickHandlers();
+    updateSliderRange();
+    updateLinkTable();
+    update();
+};
+</script>
+</body>
+</html>
